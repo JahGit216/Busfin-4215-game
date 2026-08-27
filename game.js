@@ -1,43 +1,60 @@
-export const ACTIONS = Object.freeze({
-  build: Object.freeze({ cash: -3, traction: 3, message: "You shipped a useful product improvement." }),
-  sell: Object.freeze({ cash: 1, traction: 1, message: "A customer conversation produced a small sale." }),
-  raise: Object.freeze({ cash: 5, traction: 0, message: "New financing bought time, but no customer proof." })
-});
+export const CUP_COUNT = 3;
+export const WINS_NEEDED = 3;
 
-export function createInitialState() {
+export function createGame() {
   return {
-    turn: 0,
-    cash: 12,
-    traction: 0,
-    status: "playing",
-    feedback: "You have six turns. Reach eight traction before cash reaches zero.",
-    history: []
+    phase: "ready",
+    round: 1,
+    streak: 0,
+    winningCup: null,
+    selectedCup: null,
+    message: "Watch the buckeye, then follow the cups.",
   };
 }
 
-export function applyAction(state, actionName) {
-  if (state.status !== "playing") return state;
+export function startRound(state, random = Math.random) {
+  if (!["ready", "correct"].includes(state.phase)) {
+    throw new Error("A round cannot start from the current phase.");
+  }
 
-  const action = ACTIONS[actionName];
-  if (!action) throw new Error(`Unknown action: ${actionName}`);
-
-  const next = {
+  return {
     ...state,
-    turn: state.turn + 1,
-    cash: state.cash + action.cash,
-    traction: state.traction + action.traction,
-    feedback: action.message,
-    history: [...state.history, action.message]
+    phase: "shuffling",
+    winningCup: Math.floor(random() * CUP_COUNT),
+    selectedCup: null,
+    message: "Keep your eyes on the cup…",
   };
+}
 
-  if (next.cash <= 0) {
-    return { ...next, cash: 0, status: "failed", feedback: "Cash reached zero. The venture stopped." };
+export function finishShuffle(state) {
+  if (state.phase !== "shuffling") {
+    throw new Error("Only a shuffling round can become guessable.");
   }
-  if (next.traction >= 8) {
-    return { ...next, status: "won", feedback: "You reached product–market fit before running out of cash." };
+
+  return { ...state, phase: "guessing", message: "Where's the buckeye? Pick a cup." };
+}
+
+export function chooseCup(state, cupIndex) {
+  if (state.phase !== "guessing") {
+    throw new Error("Choose a cup only after the shuffle finishes.");
   }
-  if (next.turn >= 6) {
-    return { ...next, status: "ended", feedback: "Time expired before the venture reached product–market fit." };
+  if (!Number.isInteger(cupIndex) || cupIndex < 0 || cupIndex >= CUP_COUNT) {
+    throw new Error("Unknown cup.");
   }
-  return next;
+
+  const correct = cupIndex === state.winningCup;
+  const streak = correct ? state.streak + 1 : 0;
+  const won = streak === WINS_NEEDED;
+
+  return {
+    ...state,
+    phase: correct ? (won ? "won" : "correct") : "lost",
+    streak,
+    selectedCup: cupIndex,
+    message: correct
+      ? won
+        ? "Three straight! You own the Oval."
+        : "Found it! One step closer to glory."
+      : "Not there. The buckeye was under another cup.",
+  };
 }

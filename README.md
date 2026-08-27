@@ -1,42 +1,30 @@
-# BUSFIN 4215 Browser-Game Starter
+# The Buckeye Shuffle Cup
 
-This is a deliberately small, deployable starting point for the individual **Ship a Game**
-assignment. It demonstrates files, state, actions, feedback, endings, restart, testing, and
-GitHub Pages. It is not a finished submission. Replace the premise, specification, rules,
-writing, and visual identity.
+A fast browser shell game made for Buckeye Nation. Watch the hidden buckeye, follow three animated golden cups, and pick the right cup three rounds in a row to win.
 
-## Start
+## Play
 
-1. Use this repository as a template or copy it into a new repository.
-2. Open the folder in VS Code and complete `SPEC.md` before asking an agent to edit code.
-3. Run a local server:
+Open the [live GitHub Pages game](https://jahgit216.github.io/Busfin-4215-game/), then:
 
-   ```bash
-   npm run serve
-   ```
+1. Select **Start the shuffle**.
+2. Track the cups until the animation stops.
+3. Choose the cup hiding the buckeye.
+4. Find it three times in a row to earn the winning screen. One miss ends the run.
 
-4. Open <http://localhost:8000>.
-5. Run the automated state tests:
+The game supports mouse, touch, and keyboard play, visible focus, live status announcements, and reduced-motion preferences.
 
-   ```bash
-   npm test
-   ```
+## Run locally
 
-## Ship
+```bash
+npm run serve
+```
 
-Push to the `main` branch. The included GitHub Actions workflow deploys the repository to
-GitHub Pages. In the repository's **Settings → Pages**, choose **GitHub Actions** as the
-source if it is not already selected. After the workflow succeeds, open the deployment in
-a private browser window and play one complete loop.
+Open <http://localhost:8000>.
 
-## Required evidence
+## Test
 
-- public URL that works while signed out;
-- repository URL;
-- concise `BUILD_LOG.md`;
-- completed `USER_TEST.md` describing an unfamiliar user's observed friction;
-- at least one verified revision; and
-- ability to explain every consequential rule and design choice.
+```bash
+npm test
+```
 
-Submitting the unchanged starter, fabricated user evidence, or code you cannot explain is
-not acceptable.
+The tests cover round setup, deterministic cup placement, winning streaks, losses, immutability, and invalid actions.
