@@ -2,10 +2,10 @@
 
 Replace every bracketed prompt before asking an agent to build.
 
-1. The player is **[specific person]** trying to **[specific goal]**.
-2. The visible state consists of **[three or fewer resources, scores, or conditions]**.
-3. On each turn, the player chooses **[two to four actions]**, and each action changes the state according to **[rules you can explain]**.
-4. The game ends when **[win condition]**, **[loss condition]**, or **[turn/time condition]**, and the player can restart without reloading the page.
+1. The player is **[Ohio State student]** trying to **[pick a hidden buckeye under a cup]**.
+2. The visible state consists of **[three golden cups and a buckeye nut]**.
+3. On each turn, the player chooses **[buckeye nut is placed under cup then shuffled, player chooses the winner]**, and each action changes the state according to **[if the player correctly guesses which cup the nut is under]**.
+4. The game ends when **[player guesses correct three times in a row]**, **[player guesses incorrectly (big loser screen)]**, and the player can restart without reloading the page.
 
 ## Definition of done
 
