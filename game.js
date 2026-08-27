@@ -1,6 +1,17 @@
 export const CUP_COUNT = 3;
 export const WINS_NEEDED = 3;
 
+const ROUND_TEMPOS = [
+  { moveDuration: 720, minPause: 760, maxPause: 980 },
+  { moveDuration: 500, minPause: 540, maxPause: 700 },
+  { moveDuration: 330, minPause: 360, maxPause: 510 },
+];
+
+export function getShuffleTempo(round) {
+  const index = Math.min(Math.max(Math.trunc(round) - 1, 0), ROUND_TEMPOS.length - 1);
+  return { ...ROUND_TEMPOS[index] };
+}
+
 export function createGame() {
   return {
     phase: "ready",

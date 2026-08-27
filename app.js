@@ -1,4 +1,4 @@
-import { beginShuffle, chooseCup, createGame, finishShuffle, startRound, WINS_NEEDED } from "./game.js";
+import { beginShuffle, chooseCup, createGame, finishShuffle, getShuffleTempo, startRound, WINS_NEEDED } from "./game.js";
 
 const board = document.querySelector("#cup-board");
 const cups = [...document.querySelectorAll(".cup-button")];
@@ -30,6 +30,12 @@ function positionPieces() {
   buckeye.style.setProperty("--slot", carrierSlot);
 }
 
+function setRoundTempo() {
+  const tempo = getShuffleTempo(state.round);
+  board.style.setProperty("--move-duration", `${tempo.moveDuration}ms`);
+  return tempo;
+}
+
 function randomMove() {
   const first = Math.floor(Math.random() * 3);
   let second = Math.floor(Math.random() * 2);
@@ -51,6 +57,7 @@ function render() {
   document.body.dataset.phase = state.phase;
   message.textContent = state.message;
   roundLabel.textContent = `Round ${Math.min(state.round, WINS_NEEDED)} of ${WINS_NEEDED}`;
+  setRoundTempo();
   startButton.hidden = !["ready", "correct"].includes(state.phase);
   startButton.textContent = state.phase === "correct" ? "Shuffle again" : "Start the shuffle";
   board.classList.toggle("is-shuffling", state.phase === "shuffling");
@@ -93,6 +100,7 @@ async function beginRound() {
   if (state.phase !== "covering") return;
   state = beginShuffle(state);
   render();
+  const tempo = setRoundTempo();
 
   const started = performance.now();
   while (state.phase === "shuffling" && performance.now() - started < SHUFFLE_DURATION) {
@@ -100,7 +108,8 @@ async function beginRound() {
     const secondsLeft = Math.max(1, Math.ceil((SHUFFLE_DURATION - (performance.now() - started)) / 1000));
     message.textContent = `Track the cup! ${secondsLeft} second${secondsLeft === 1 ? "" : "s"} to go.`;
     const remaining = SHUFFLE_DURATION - (performance.now() - started);
-    await wait(Math.max(0, Math.min(320 + Math.random() * 430, remaining)));
+    const nextMoveDelay = tempo.minPause + Math.random() * (tempo.maxPause - tempo.minPause);
+    await wait(Math.max(0, Math.min(nextMoveDelay, remaining)));
   }
   if (state.phase !== "shuffling") return;
   state = finishShuffle(state, cupSlots[state.hiddenCupId]);
