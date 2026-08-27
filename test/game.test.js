@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { beginShuffle, chooseCup, createGame, finishShuffle, startRound } from "../game.js";
+import { beginShuffle, chooseCup, createGame, finishShuffle, getShuffleTempo, startRound } from "../game.js";
 
 const readyToGuess = (random = () => 0, finalPosition = 0) =>
   finishShuffle(beginShuffle(startRound(createGame(), random)), finalPosition);
@@ -15,6 +15,17 @@ test("random value determines which physical cup covers the buckeye", () => {
 
 test("the final tracked position determines the winning choice", () => {
   assert.equal(readyToGuess(() => 0.7, 1).winningCup, 1);
+});
+
+test("each round accelerates while movement remains smooth", () => {
+  const first = getShuffleTempo(1);
+  const second = getShuffleTempo(2);
+  const third = getShuffleTempo(3);
+  assert.ok(first.moveDuration > second.moveDuration);
+  assert.ok(second.moveDuration > third.moveDuration);
+  assert.ok(first.minPause >= first.moveDuration);
+  assert.ok(second.minPause >= second.moveDuration);
+  assert.ok(third.minPause >= third.moveDuration);
 });
 
 test("a correct choice advances the streak without mutating state", () => {
