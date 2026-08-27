@@ -1,15 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chooseCup, createGame, finishShuffle, startRound } from "../game.js";
+import { beginShuffle, chooseCup, createGame, finishShuffle, startRound } from "../game.js";
 
-const readyToGuess = (random = () => 0) => finishShuffle(startRound(createGame(), random));
+const readyToGuess = (random = () => 0, finalPosition = 0) =>
+  finishShuffle(beginShuffle(startRound(createGame(), random)), finalPosition);
 
 test("a new game begins ready with no streak", () => {
-  assert.deepEqual(createGame(), { phase:"ready", round:1, streak:0, winningCup:null, selectedCup:null, message:"Watch the buckeye, then follow the cups." });
+  assert.deepEqual(createGame(), { phase:"ready", round:1, streak:0, hiddenCupId:null, winningCup:null, selectedCup:null, message:"Watch the buckeye, then follow the cups." });
 });
 
-test("random value determines the winning cup", () => {
-  assert.equal(readyToGuess(() => 0.7).winningCup, 2);
+test("random value determines which physical cup covers the buckeye", () => {
+  assert.equal(startRound(createGame(), () => 0.7).hiddenCupId, 2);
+});
+
+test("the final tracked position determines the winning choice", () => {
+  assert.equal(readyToGuess(() => 0.7, 1).winningCup, 1);
 });
 
 test("a correct choice advances the streak without mutating state", () => {

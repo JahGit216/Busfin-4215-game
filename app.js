@@ -1,7 +1,8 @@
-import { chooseCup, createGame, finishShuffle, startRound, WINS_NEEDED } from "./game.js";
+import { beginShuffle, chooseCup, createGame, finishShuffle, startRound, WINS_NEEDED } from "./game.js";
 
 const board = document.querySelector("#cup-board");
 const cups = [...document.querySelectorAll(".cup-button")];
+const buckeye = document.querySelector("#buckeye");
 const message = document.querySelector("#message");
 const roundLabel = document.querySelector("#round-label");
 const streakDots = [...document.querySelectorAll(".streak-dot")];
@@ -14,7 +15,37 @@ const overlayCopy = document.querySelector("#overlay-copy");
 const overlayRestart = document.querySelector("#overlay-restart");
 
 let state = createGame();
-let shuffleTimer;
+let timers = [];
+let cupSlots = [0, 1, 2];
+const SHUFFLE_DURATION = 15_000;
+
+const wait = (milliseconds) => new Promise((resolve) => {
+  const timer = setTimeout(resolve, milliseconds);
+  timers.push(timer);
+});
+
+function positionPieces() {
+  cups.forEach((cup, id) => cup.style.setProperty("--slot", cupSlots[id]));
+  const carrierSlot = state.hiddenCupId === null ? 1 : cupSlots[state.hiddenCupId];
+  buckeye.style.setProperty("--slot", carrierSlot);
+}
+
+function randomMove() {
+  const first = Math.floor(Math.random() * 3);
+  let second = Math.floor(Math.random() * 2);
+  if (second >= first) second += 1;
+
+  if (Math.random() < 0.28) {
+    const third = 3 - first - second;
+    const oldFirst = cupSlots[first];
+    cupSlots[first] = cupSlots[second];
+    cupSlots[second] = cupSlots[third];
+    cupSlots[third] = oldFirst;
+  } else {
+    [cupSlots[first], cupSlots[second]] = [cupSlots[second], cupSlots[first]];
+  }
+  positionPieces();
+}
 
 function render() {
   document.body.dataset.phase = state.phase;
@@ -23,6 +54,9 @@ function render() {
   startButton.hidden = !["ready", "correct"].includes(state.phase);
   startButton.textContent = state.phase === "correct" ? "Shuffle again" : "Start the shuffle";
   board.classList.toggle("is-shuffling", state.phase === "shuffling");
+  board.classList.toggle("is-covering", state.phase === "covering");
+  board.classList.toggle("is-guessing", state.phase === "guessing");
+  board.classList.toggle("is-revealed", ["correct", "lost", "won"].includes(state.phase));
 
   streakDots.forEach((dot, index) => {
     dot.classList.toggle("is-earned", index < state.streak);
@@ -30,11 +64,11 @@ function render() {
 
   cups.forEach((cup, index) => {
     const canGuess = state.phase === "guessing";
-    const reveal = ["correct", "lost", "won"].includes(state.phase) && index === state.winningCup;
+    const reveal = ["correct", "lost", "won"].includes(state.phase) && cupSlots[index] === state.winningCup;
     cup.disabled = !canGuess;
     cup.classList.toggle("is-revealed", reveal);
-    cup.classList.toggle("is-wrong", state.phase === "lost" && index === state.selectedCup);
-    cup.setAttribute("aria-label", canGuess ? `Choose cup ${index + 1}` : `Cup ${index + 1}`);
+    cup.classList.toggle("is-wrong", state.phase === "lost" && cupSlots[index] === state.selectedCup);
+    cup.setAttribute("aria-label", canGuess ? `Choose cup position ${cupSlots[index] + 1}` : `Cup ${index + 1}`);
   });
 
   const ended = state.phase === "won" || state.phase === "lost";
@@ -50,26 +84,42 @@ function render() {
   }
 }
 
-function beginRound() {
+async function beginRound() {
   state = startRound(state);
+  cupSlots = [0, 1, 2];
+  positionPieces();
   render();
-  clearTimeout(shuffleTimer);
-  shuffleTimer = setTimeout(() => {
-    state = finishShuffle(state);
-    render();
-    cups[0].focus();
-  }, 2100);
+  await wait(1400);
+  if (state.phase !== "covering") return;
+  state = beginShuffle(state);
+  render();
+
+  const started = performance.now();
+  while (state.phase === "shuffling" && performance.now() - started < SHUFFLE_DURATION) {
+    randomMove();
+    const secondsLeft = Math.max(1, Math.ceil((SHUFFLE_DURATION - (performance.now() - started)) / 1000));
+    message.textContent = `Track the cup! ${secondsLeft} second${secondsLeft === 1 ? "" : "s"} to go.`;
+    const remaining = SHUFFLE_DURATION - (performance.now() - started);
+    await wait(Math.max(0, Math.min(320 + Math.random() * 430, remaining)));
+  }
+  if (state.phase !== "shuffling") return;
+  state = finishShuffle(state, cupSlots[state.hiddenCupId]);
+  render();
+  cups.find((cup) => cupSlots[cups.indexOf(cup)] === 0)?.focus();
 }
 
-function selectCup(index) {
-  state = chooseCup(state, index);
+function selectCup(cupId) {
+  state = chooseCup(state, cupSlots[cupId]);
   if (state.phase === "correct") state = { ...state, round: state.round + 1 };
   render();
 }
 
 function reset() {
-  clearTimeout(shuffleTimer);
+  timers.forEach(clearTimeout);
+  timers = [];
   state = createGame();
+  cupSlots = [0, 1, 2];
+  positionPieces();
   overlay.hidden = true;
   render();
   startButton.focus();
@@ -79,4 +129,5 @@ startButton.addEventListener("click", beginRound);
 restartButton.addEventListener("click", reset);
 overlayRestart.addEventListener("click", reset);
 cups.forEach((cup, index) => cup.addEventListener("click", () => selectCup(index)));
+positionPieces();
 render();

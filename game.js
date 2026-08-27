@@ -6,6 +6,7 @@ export function createGame() {
     phase: "ready",
     round: 1,
     streak: 0,
+    hiddenCupId: null,
     winningCup: null,
     selectedCup: null,
     message: "Watch the buckeye, then follow the cups.",
@@ -19,19 +20,31 @@ export function startRound(state, random = Math.random) {
 
   return {
     ...state,
-    phase: "shuffling",
-    winningCup: Math.floor(random() * CUP_COUNT),
+    phase: "covering",
+    hiddenCupId: Math.floor(random() * CUP_COUNT),
+    winningCup: null,
     selectedCup: null,
     message: "Keep your eyes on the cup…",
   };
 }
 
-export function finishShuffle(state) {
+export function beginShuffle(state) {
+  if (state.phase !== "covering") {
+    throw new Error("Only a covered buckeye can begin shuffling.");
+  }
+
+  return { ...state, phase: "shuffling", message: "Track the cup! 15 seconds to go." };
+}
+
+export function finishShuffle(state, winningCup) {
   if (state.phase !== "shuffling") {
     throw new Error("Only a shuffling round can become guessable.");
   }
+  if (!Number.isInteger(winningCup) || winningCup < 0 || winningCup >= CUP_COUNT) {
+    throw new Error("The final cup position is invalid.");
+  }
 
-  return { ...state, phase: "guessing", message: "Where's the buckeye? Pick a cup." };
+  return { ...state, phase: "guessing", winningCup, message: "Where's the buckeye? Pick a cup." };
 }
 
 export function chooseCup(state, cupIndex) {
