@@ -33,7 +33,7 @@ export function beginShuffle(state) {
     throw new Error("Only a covered buckeye can begin shuffling.");
   }
 
-  return { ...state, phase: "shuffling", message: "Track the cup! 15 seconds to go." };
+  return { ...state, phase: "shuffling", message: "Track the cup! 10 seconds to go." };
 }
 
 export function finishShuffle(state, winningCup) {
