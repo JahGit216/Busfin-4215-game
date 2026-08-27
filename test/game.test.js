@@ -1,39 +1,37 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyAction, createInitialState } from "../game.js";
+import { chooseCup, createGame, finishShuffle, startRound } from "../game.js";
 
-test("initial state is playable and independent", () => {
-  const first = createInitialState();
-  const second = createInitialState();
-  first.history.push("changed");
-  assert.equal(first.status, "playing");
-  assert.deepEqual(second.history, []);
+const readyToGuess = (random = () => 0) => finishShuffle(startRound(createGame(), random));
+
+test("a new game begins ready with no streak", () => {
+  assert.deepEqual(createGame(), { phase:"ready", round:1, streak:0, winningCup:null, selectedCup:null, message:"Watch the buckeye, then follow the cups." });
 });
 
-test("actions produce new state without mutating the old state", () => {
-  const start = createInitialState();
-  const next = applyAction(start, "build");
-  assert.equal(start.turn, 0);
-  assert.equal(next.turn, 1);
-  assert.equal(next.cash, 9);
-  assert.equal(next.traction, 3);
+test("random value determines the winning cup", () => {
+  assert.equal(readyToGuess(() => 0.7).winningCup, 2);
 });
 
-test("three build decisions reach the success ending", () => {
-  let state = createInitialState();
-  state = applyAction(state, "build");
-  state = applyAction(state, "build");
-  state = applyAction(state, "build");
-  assert.equal(state.status, "won");
-  assert.match(state.feedback, /product–market fit/);
+test("a correct choice advances the streak without mutating state", () => {
+  const state = readyToGuess();
+  const next = chooseCup(state, 0);
+  assert.equal(state.streak, 0);
+  assert.equal(next.streak, 1);
+  assert.equal(next.phase, "correct");
 });
 
-test("the turn limit produces an ending", () => {
-  let state = createInitialState();
-  for (let turn = 0; turn < 6; turn += 1) state = applyAction(state, "raise");
-  assert.equal(state.status, "ended");
+test("three correct choices win the game", () => {
+  const state = { ...readyToGuess(), streak:2 };
+  assert.equal(chooseCup(state, 0).phase, "won");
 });
 
-test("unknown actions fail loudly", () => {
-  assert.throws(() => applyAction(createInitialState(), "guess"), /Unknown action/);
+test("an incorrect choice ends the game and clears the streak", () => {
+  const state = { ...readyToGuess(), streak:2 };
+  const next = chooseCup(state, 1);
+  assert.equal(next.phase, "lost");
+  assert.equal(next.streak, 0);
+});
+
+test("choices are rejected before the shuffle ends", () => {
+  assert.throws(() => chooseCup(createGame(), 0), /after the shuffle/);
 });
