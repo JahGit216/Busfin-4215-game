@@ -17,7 +17,7 @@ const overlayRestart = document.querySelector("#overlay-restart");
 let state = createGame();
 let timers = [];
 let cupSlots = [0, 1, 2];
-const SHUFFLE_DURATION = 15_000;
+const SHUFFLE_DURATION = 10_000;
 
 const wait = (milliseconds) => new Promise((resolve) => {
   const timer = setTimeout(resolve, milliseconds);
